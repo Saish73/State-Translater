@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Śāstra Rule Precedence & State Transition Simulator | IKS Project</title>
+<meta name="description" content="An interactive educational website exploring the traditional hierarchy of Śāstras in Indian Knowledge Systems and simulating rule precedence between them.">
+
+<!-- Google Font: Noto Sans Devanagari for Sanskrit text rendering -->
+<link rel="preconnect" href="[fonts.googleapis.com](https://fonts.googleapis.com)">
+<link rel="preconnect" href="[fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
+<link href="[fonts.googleapis.com](https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap)" rel="stylesheet">
+
+<style>
+  /* ===================== ROOT VARIABLES ===================== */
+  :root{
+    --saffron:#FF9933;
+    --saffron-dark:#e07d1c;
+    --white:#FFFFFF;
+    --green:#138808;
+    --green-dark:#0d6406;
+    --navy-text:#1a1a2e;
+    --gray-bg:#f7f7f5;
+    --gray-mid:#8a8a8a;
+    --shadow-soft:0 4px 20px rgba(0,0,0,0.08);
+    --shadow-hover:0 8px 30px rgba(0,0,0,0.15);
+    --radius:14px;
+    --transition:all 0.3s ease;
+  }
+
+  /* ===================== RESET ===================== */
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    font-family:'Poppins', sans-serif;
+    color:var(--navy-text);
+    background:var(--gray-bg);
+    line-height:1.7;
+    overflow-x:hidden;
+  }
+
+  .sanskrit{
+    font-family:'Noto Sans Devanagari', sans-serif;
+  }
+
+  img{ max-width:100%; display:block; }
+
+  a{ text-decoration:none; color:inherit; }
+
+  ul{ list-style:none; }
+
+  section{
+    padding:70px 20px;
+    max-width:1200px;
+    margin:0 auto;
+    scroll-margin-top:80px;
+  }
+
+  h1,h2,h3,h4{
+    font-weight:700;
+    line-height:1.3;
+  }
+
+  .section-heading{
+    font-size:clamp(1.7rem,3vw,2.4rem);
+    text-align:center;
+    margin-bottom:14px;
+    color:var(--navy-text);
+    position:relative;
+  }
+
+  .section-heading::after{
+    content:'';
+    display:block;
+    width:80px;
+    height:4px;
+    margin:14px auto 0;
+    background:linear-gradient(90deg,var(--saffron),var(--green));
+    border-radius:4px;
+  }
+
+  .section-intro{
+    text-align:center;
+    max-width:800px;
+    margin:0 auto 40px;
+    color:#444;
+    font-size:1.05rem;
+  }
+
+  /* ===================== HEADER / NAV ===================== */
+  header{
+    background:linear-gradient(135deg, var(--saffron) 0%, #ffb04d 45%, var(--white) 100%);
+    position:relative;
+    padding-bottom:0;
+  }
+
+  .header-inner{
+    max-width:1200px;
+    margin:0 auto;
+    padding:40px 20px 30px;
+    text-align:center;
+  }
+
+  .header-inner h1{
+    font-size:clamp(1.6rem,4vw,2.6rem);
+    color:#2b1a00;
+    text-shadow:0 2px 6px rgba(255,255,255,0.4);
+  }
+
+  .header-inner .subtitle{
+    font-size:clamp(1rem,2vw,1.3rem);
+    margin-top:10px;
+    color:#3a2a00;
+    font-weight:500;
+  }
+
+  .header-inner .student-info{
+    margin-top:16px;
+    font-size:0.95rem;
+    color:#442e00;
+    background:rgba(255,255,255,0.55);
+    display:inline-block;
+    padding:8px 18px;
+    border-radius:30px;
+    backdrop-filter:blur(4px);
+  }
+
+  nav{
+    background:var(--white);
+    box-shadow:0 2px 12px rgba(0,0,0,0.1);
+    position:sticky;
+    top:0;
+    z-index:1000;
+  }
+
+  .nav-inner{
+    max-width:1200px;
+    margin:0 auto;
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:6px;
+    padding:10px 16px;
+  }
+
+  nav a{
+    padding:10px 18px;
+    font-weight:600;
+    font-size:0.95rem;
+    color:var(--navy-text);
+    border-radius:30px;
+    transition:var(--transition);
+    white-space:nowrap;
+  }
+
+  nav a:hover, nav a:focus-visible{
+    background:linear-gradient(90deg,var(--saffron),var(--green));
+    color:var(--white);
+    transform:translateY(-2px);
+  }
+
+  /* ===================== CARDS (generic) ===================== */
+  .card{
+    background:var(--white);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-soft);
+    padding:28px;
+    transition:var(--transition);
+  }
+
+  .card:hover{
+    box-shadow:var(--shadow-hover);
+    transform:translateY(-4px);
+  }
+
+  /* ===================== INTRO SECTION ===================== */
+  #home .intro-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:24px;
+    margin-top:30px;
+  }
+
+  #home p{
+    margin-bottom:16px;
+    color:#333;
+  }
+
+  .key-points{
+    background:#fff8ee;
+    border-left:5px solid var(--saffron);
+    border-radius:8px;
+    padding:20px 24px;
+    margin-top:20px;
+  }
+
+  .key-points li{
+    margin-bottom:10px;
+    padding-left:24px;
+    position:relative;
+  }
+
+  .key-points li::before{
+    content:'✓';
+    position:absolute;
+    left:0;
+    color:var(--green);
+    font-weight:700;
+  }
+
+  /* ===================== HIERARCHY TABLE ===================== */
+  .table-wrapper{
+    overflow-x:auto;
+    background:var(--white);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-soft);
+    margin-bottom:50px;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:650px;
+  }
+
+  thead tr{
+    background:linear-gradient(90deg,var(--saffron),var(--saffron-dark));
+    color:var(--white);
+  }
+
+  th, td{
+    padding:16px 18px;
+    text-align:left;
+    border-bottom:1px solid #eee;
+  }
+
+  tbody tr{
+    transition:var(--transition);
+    cursor:default;
+  }
+
+  tbody tr:hover{
+    background:#fff4e5;
+  }
+
+  tbody tr:last-child td{
+    border-bottom:none;
+  }
+
+  .rank-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    background:var(--green);
+    color:var(--white);
+    font-weight:700;
+  }
+
+  .sanskrit-name{
+    font-family:'Noto Sans Devanagari', sans-serif;
+    font-size:1.15rem;
+    color:var(--green-dark);
+    font-weight:600;
+  }
+
+  /* ===================== FLOWCHART ===================== */
+  .flowchart{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+    margin:40px 0;
+  }
+
+  .flow-box{
+    background:linear-gradient(135deg,var(--saffron),var(--saffron-dark));
+    color:var(--white);
+    padding:18px 26px;
+    border-radius:12px;
+    font-weight:700;
+    text-align:center;
+    min-width:140px;
+    box-shadow:var(--shadow-soft);
+    transition:var(--transition);
+    cursor:default;
+  }
+
+  .flow-box:nth-child(3){ background:linear-gradient(135deg,#4caf50,var(--green)); }
+  .flow-box:nth-child(5){ background:linear-gradient(135deg,#7cb342,var(--green-dark)); }
+  .flow-box:nth-child(7){ background:linear-gradient(135deg,#9e9e9e,#616161); }
+
+  .flow-box:hover{
+    transform:scale(1.08);
+    box-shadow:var(--shadow-hover);
+  }
+
+  .flow-box small{
+    display:block;
+    font-weight:400;
+    font-size:0.75rem;
+    margin-top:4px;
+    opacity:0.9;
+  }
+
+  .flow-arrow{
+    font-size:1.8rem;
+    color:var(--navy-text);
+    font-weight:700;
+  }
+
+  .explanation-box{
+    background:#eefcee;
+    border-left:5px solid var(--green);
+    border-radius:8px;
+    padding:20px 24px;
+    margin-top:10px;
+  }
+
+  .explanation-box strong{ color:var(--green-dark); }
+
+  /* ===================== SIMULATOR ===================== */
+  #simulator{
+    background:linear-gradient(180deg,#fff, #fff8ee);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-soft);
+  }
+
+  .simulator-panel{
+    background:var(--white);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-soft);
+    padding:36px;
+    max-width:900px;
+    margin:0 auto;
+  }
+
+  .selectors{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:24px;
+    margin-bottom:28px;
+  }
+
+  @media(min-width:640px){
+    .selectors{ grid-template-columns:1fr 1fr; }
+  }
+
+  .select-group{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  .select-group label{
+    font-weight:600;
+    font-size:0.95rem;
+    color:var(--navy-text);
+  }
+
+  select{
+    padding:12px 14px;
+    border-radius:10px;
+    border:2px solid #ddd;
+    font-size:1rem;
+    font-family:'Poppins', sans-serif;
+    background:var(--white);
+    transition:var(--transition);
+    cursor:pointer;
+  }
+
+  select:hover, select:focus{
+    border-color:var(--saffron);
+    outline:none;
+  }
+
+  .tooltip-wrap{
+    position:relative;
+    display:inline-block;
+  }
+
+  .info-icon{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:var(--saffron);
+    color:var(--white);
+    font-size:0.72rem;
+    font-weight:700;
+    margin-left:6px;
+    cursor:help;
+    vertical-align:middle;
+  }
+
+  .tooltip-text{
+    visibility:hidden;
+    opacity:0;
+    width:230px;
+    background:var(--navy-text);
+    color:#fff;
+    text-align:left;
+    border-radius:8px;
+    padding:10px 12px;
+    position:absolute;
+    z-index:10;
+    bottom:130%;
+    left:50%;
+    transform:translateX(-50%);
+    transition:opacity 0.25s ease;
+    font-size:0.8rem;
+    line-height:1.4;
+    font-weight:400;
+    pointer-events:none;
+  }
+
+  .tooltip-text::after{
+    content:'';
+    position:absolute;
+    top:100%;
+    left:50%;
+    margin-left:-6px;
+    border-width:6px;
+    border-style:solid;
+    border-color:var(--navy-text) transparent transparent transparent;
+  }
+
+  .tooltip-wrap:hover .tooltip-text,
+  .tooltip-wrap:focus-within .tooltip-text{
+    visibility:visible;
+    opacity:1;
+  }
+
+  .btn-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    justify-content:center;
+    margin-bottom:10px;
+  }
+
+  .btn{
+    border:none;
+    padding:14px 28px;
+    font-size:1rem;
+    font-weight:600;
+    border-radius:40px;
+    cursor:pointer;
+    transition:var(--transition);
+    box-shadow:0 3px 10px rgba(0,0,0,0.15);
+  }
+
+  .btn:active{ transform:scale(0.96); }
+
+  .btn-check{
+    background:var(--green);
+    color:var(--white);
+    font-size:1.05rem;
+    padding:16px 34px;
+  }
+  .btn-check:hover{ background:var(--green-dark); box-shadow:0 6px 18px rgba(19,136,8,0.4); transform:translateY(-2px); }
+
+  .btn-example{
+    background:#2b6cb0;
+    color:var(--white);
+  }
+  .btn-example:hover{ background:#1e4e80; transform:translateY(-2px); box-shadow:0 6px 18px rgba(43,108,176,0.4); }
+
+  .btn-reset{
+    background:#8a8a8a;
+    color:var(--white);
+  }
+  .btn-reset:hover{ background:#666; transform:translateY(-2px); }
+
+  .result-area{
+    margin-top:30px;
+    display:none;
+    background:linear-gradient(135deg,#fff8ee,#eefcee);
+    border-radius:var(--radius);
+    padding:28px;
+    border:2px solid var(--saffron);
+    animation:fadeSlideIn 0.5s ease forwards;
+  }
+
+  @keyframes fadeSlideIn{
+    from{ opacity:0; transform:translateY(20px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .result-area.show{ display:block; }
+
+  .result-winner{
+    font-size:1.4rem;
+    font-weight:700;
+    color:var(--green-dark);
+    margin-bottom:10px;
+    text-align:center;
+  }
+
+  .result-reason{
+    color:#333;
+    margin-bottom:18px;
+    text-align:center;
+  }
+
+  .result-flow{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+
+  .result-flow .node{
+    background:var(--saffron);
+    color:#fff;
+    padding:10px 20px;
+    border-radius:8px;
+    font-weight:700;
+  }
+
+  .result-flow .node.loser{
+    background:#ccc;
+    color:#555;
+  }
+
+  .result-flow .arrow{
+    font-size:1.5rem;
+    color:var(--green-dark);
+  }
+
+  .sanskrit-quote{
+    text-align:center;
+    font-family:'Noto Sans Devanagari', sans-serif;
+    font-size:1.4rem;
+    color:var(--saffron-dark);
+    font-weight:600;
+    margin-top:6px;
+  }
+
+  .quote-translation{
+    text-align:center;
+    font-style:italic;
+    color:#666;
+    font-size:0.9rem;
+    margin-top:4px;
+  }
+
+  .example-tag{
+    text-align:center;
+    font-size:0.85rem;
+    color:#2b6cb0;
+    margin-top:14px;
+    font-weight:600;
+  }
+
+  /* ===================== REAL EXAMPLES ===================== */
+  .examples-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:24px;
+    margin-top:30px;
+  }
+
+  @media(min-width:768px){
+    .examples-grid{ grid-template-columns:repeat(3,1fr); }
+  }
+
+  .example-card{
+    background:var(--white);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-soft);
+    padding:26px;
+    border-top:5px solid var(--saffron);
+    transition:var(--transition);
+  }
+
+  .example-card:nth-child(2){ border-top-color:var(--green); }
+  .example-card:nth-child(3){ border-top-color:#2b6cb0; }
+
+  .example-card:hover{
+    transform:translateY(-6px);
+    box-shadow:var(--shadow-hover);
+  }
+
+  .example-card h3{
+    color:var(--navy-text);
+    margin-bottom:12px;
+    font-size:1.15rem;
+  }
+
+  .example-card .label{
+    font-weight:700;
+    color:var(--saffron-dark);
+    display:block;
+    margin-top:12px;
+    margin-bottom:4px;
+    font-size:0.85rem;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+
+  .example-card .source{
+    margin-top:14px;
+    font-size:0.82rem;
+    color:#888;
+    border-top:1px dashed #ddd;
+    padding-top:10px;
+  }
+
+  /* ===================== REFERENCES ===================== */
+  .references-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:24px;
+    margin-top:30px;
+  }
+
+  @media(min-width:768px){
+    .references-grid{ grid-template-columns:1fr 1fr; }
+  }
+
+  .ref-card ul{
+    margin-top:12px;
+  }
+
+  .ref-card li{
+    padding:8px 0;
+    border-bottom:1px solid #f0f0f0;
+    padding-left:22px;
+    position:relative;
+  }
+
+  .ref-card li:last-child{ border-bottom:none; }
+
+  .ref-card li::before{
+    content:'📖';
+    position:absolute;
+    left:0;
+  }
+
+  .disclaimer{
+    margin-top:30px;
+    background:#fff4e5;
+    border:1px dashed var(--saffron-dark);
+    border-radius:10px;
+    padding:20px;
+    text-align:center;
+    font-size:0.92rem;
+    color:#5a4200;
+  }
+
+  /* ===================== FOOTER ===================== */
+  footer{
+    background:linear-gradient(135deg,var(--green-dark),var(--green));
+    color:var(--white);
+    text-align:center;
+    padding:40px 20px;
+    margin-top:40px;
+  }
+
+  footer p{ margin:6px 0; font-size:0.92rem; }
+
+  footer .footer-title{
+    font-size:1.1rem;
+    font-weight:700;
+    margin-bottom:10px;
+  }
+
+  footer a{
+    color:#ffe6b3;
+    text-decoration:underline;
+  }
+
+  footer .copyright{
+    margin-top:16px;
+    font-size:0.8rem;
+    opacity:0.85;
+    border-top:1px solid rgba(255,255,255,0.25);
+    padding-top:14px;
+  }
+
+  /* ===================== RESPONSIVE ===================== */
+  @media(max-width:480px){
+    section{ padding:50px 16px; }
+    .flowchart{ flex-direction:column; }
+    .flow-arrow{ transform:rotate(90deg); }
+    .simulator-panel{ padding:22px; }
+  }
+
+  /* ===================== PRINT ===================== */
+  @media print{
+    nav, .btn-row, footer{ display:none; }
+    body{ background:#fff; }
+    section{ padding:20px 0; }
+    .card, .example-card, .ref-card{ box-shadow:none; border:1px solid #ccc; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== HEADER ===================== -->
+<header>
+  <div class="header-inner">
+    <h1>Śāstra Rule Precedence &amp; State Transition Simulator</h1>
+    <p class="subtitle">Indian Knowledge Systems (IKS) Project</p>
+  </div>
+</header>
+
+<!-- ===================== NAVIGATION ===================== -->
+<nav>
+  <div class="nav-inner">
+    <a href="#home">Home</a>
+    <a href="#hierarchy">Hierarchy</a>
+    <a href="#simulator">Simulator</a>
+    <a href="#examples">Examples</a>
+    <a href="#references">References</a>
+  </div>
+</nav>
+
+<!-- ===================== HOME / INTRODUCTION ===================== -->
+<section id="home">
+  <h2 class="section-heading">Introduction to Śāstras</h2>
+
+  <div class="intro-grid">
+    <div class="card">
+      <p>
+        In the Indian intellectual tradition, <strong>Śāstra</strong> refers to a systematic body of knowledge or a treatise governing a particular domain of life — spiritual, social, legal, scientific, or artistic. The textual foundation of this tradition is layered into several categories. The <strong class="sanskrit">वेद</strong> (Vedas) — Rigveda, Yajurveda, Samaveda, and Atharvaveda — are considered <em>Śruti</em> ("that which is heard"), believed to be eternal and revealed rather than authored by any human being. Below the Vedas sit the <strong>Upanishads</strong>, philosophical appendices to the Vedas that explore metaphysical questions of self and reality. The <strong>Smritis</strong> (literally "that which is remembered"), such as the Manusmriti and Yajnavalkya Smriti, are human-authored texts that codify social, ethical, and legal conduct based on the Vedic worldview. The <strong>Puranas</strong> are narrative and mythological texts that popularize dharmic teachings through stories, while the <strong>Dharmasutras</strong> are older, aphoristic legal manuals that predate the more elaborate Smriti codes.
+      </p>
+      <p>
+        Because these texts were composed across centuries by different authors for different audiences, they frequently contain rules that appear to conflict with one another on matters of ritual, marriage, inheritance, diet, and conduct. To resolve such conflicts without discarding any text as invalid, Indian jurisprudence developed a formal doctrine of <strong>rule precedence</strong> — a hierarchy of authority (<span class="sanskrit">प्रामाण्य</span>, <em>prāmāṇya</em>) that determines which text's rule prevails when two sources disagree. This principle, discussed extensively in <em>Mīmāṃsā</em> (the school of Vedic textual interpretation) and later Dharmashastra commentaries, is foundational to how classical Indian legal reasoning (<em>Vyavahāra</em>) actually functioned in practice.
+      </p>
+      <p>
+        This project reframes that classical doctrine using a concept familiar from computer science: <strong>state transition logic</strong>. In a rule-based system, when multiple rules could apply to the same input, the system must transition to a single valid state by applying a priority function. Here, each Śāstra type is assigned a fixed precedence value, and the "system" (our simulator) computes which rule wins when two Śāstras are compared — mirroring, in a simplified computational model, the same conflict-resolution logic that ancient Indian scholars used to reconcile centuries of textual tradition.
+      </p>
+
+      <div class="key-points">
+        <ul>
+          <li><strong>Śruti</strong> (Vedas) is considered <em>apaurusheya</em> (not of human origin) and therefore holds the highest authority in matters of dharma.</li>
+          <li><strong>Rule precedence</strong> allows apparently contradictory texts to coexist within a single legal-ethical tradition without one being declared "wrong."</li>
+          <li><strong>State transition modeling</strong> gives us a modern, computational lens to visualize an ancient system of textual hierarchy and conflict resolution.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ŚĀSTRA HIERARCHY ===================== -->
+<section id="hierarchy">
+  <h2 class="section-heading">Traditional Śāstra Hierarchy (Rule Precedence Order)</h2>
+  <p class="section-intro">
+    In Indian Knowledge Systems, when two rules conflict, the Śāstra with higher authority prevails. This order was formalized by Dharmashastra commentators and the Mīmāṃsā school of exegesis to ensure consistent interpretation across a vast and diverse textual corpus.
+  </p>
+
+  <div class="table-wrapper">
+    <table>
+      <caption class="sr-only">Hierarchy of Śāstra authority levels</caption>
+      <thead>
+        <tr>
+          <th scope="col">Rank</th>
+          <th scope="col">Śāstra Type</th>
+          <th scope="col">Sanskrit Name</th>
+          <th scope="col">Examples</th>
+          <th scope="col">Authority Level</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="rank-badge">1</span></td>
+          <td><strong>Śruti</strong></td>
+          <td><span class="sanskrit-name">श्रुति</span></td>
+          <td>Rigveda, Yajurveda, Samaveda, Atharvaveda</td>
+          <td>Highest (Divine Revelation)</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge">2</span></td>
+          <td><strong>Smriti</strong></td>
+          <td><span class="sanskrit-name">स्मृति</span></td>
+          <td>Manusmriti, Yajnavalkya Smriti, Narada Smriti</td>
+          <td>High (Traditional Texts)</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge">3</span></td>
+          <td><strong>Purana</strong></td>
+          <td><span class="sanskrit-name">पुराण</span></td>
+          <td>Bhagavata Purana, Vishnu Purana, Shiva Purana</td>
+          <td>Medium (Mythological Texts)</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge">4</span></td>
+          <td><strong>Dharmasutra</strong></td>
+          <td><span class="sanskrit-name">धर्मसूत्र</span></td>
+          <td>Gautama Dharmasutra, Baudhayana Dharmasutra</td>
+          <td>Contextual (Legal Aphorisms)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Visual Flowchart -->
+  <div class="flowchart" aria-label="Visual flowchart of Śāstra precedence order">
+    <div class="flow-box">Śruti<small>श्रुति</small></div>
+    <div class="flow-arrow" aria-hidden="true">→</div>
+    <div class="flow-box">Smriti<small>स्मृति</small></div>
+    <div class="flow-arrow" aria-hidden="true">→</div>
+    <div class="flow-box">Purana<small>पुराण</small></div>
+    <div class="flow-arrow" aria-hidden="true">→</div>
+    <div class="flow-box">Dharmasutra<small>धर्मसूत्र</small></div>
+  </div>
+
+  <div class="explanation-box">
+    <strong>Example:</strong> If Manusmriti (Smriti) and Bhagavata Purana (Purana) have conflicting rules on a ritual, Manusmriti's rule prevails because Smriti holds higher authority than Purana in the traditional hierarchy.
+  </div>
+</section>
+
+<!-- ===================== SIMULATOR ===================== -->
+<section id="simulator">
+  <h2 class="section-heading">Interactive Rule Precedence Simulator</h2>
+  <p class="section-intro">
+    Select two Śāstras below to check which one has higher precedence according to the traditional hierarchy. The simulator applies a simple state-transition rule: the Śāstra with the higher authority value determines the final "winning" state.
+  </p>
+
+  <div class="simulator-panel">
+    <div class="selectors">
+      <div class="select-group">
+        <label for="shastra1">
+          First Śāstra
+          <span class="tooltip-wrap">
+            <span class="info-icon" tabindex="0" aria-label="Information about First Śāstra">i</span>
+            <span class="tooltip-text" id="tooltip1">Choose any of the four Śāstra categories to compare its authority level.</span>
+          </span>
+        </label>
+        <select id="shastra1" aria-describedby="tooltip1">
+          <option value="Śruti">Śruti (श्रुति)</option>
+          <option value="Smriti">Smriti (स्मृति)</option>
+          <option value="Purana">Purana (पुराण)</option>
+          <option value="Dharmasutra">Dharmasutra (धर्मसूत्र)</option>
+        </select>
+      </div>
+
+      <div class="select-group">
+        <label for="shastra2">
+          Second Śāstra
+          <span class="tooltip-wrap">
+            <span class="info-icon" tabindex="0" aria-label="Information about Second Śāstra">i</span>
+            <span class="tooltip-text" id="tooltip2">Choose the second Śāstra category to compare against the first.</span>
+          </span>
+        </label>
+        <select id="shastra2" aria-describedby="tooltip2">
+          <option value="Śruti">Śruti (श्रुति)</option>
+          <option value="Smriti" selected>Smriti (स्मृति)</option>
+          <option value="Purana">Purana (पुराण)</option>
+          <option value="Dharmasutra">Dharmasutra (धर्मसूत्र)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-check" id="checkBtn">Check Precedence</button>
+      <button class="btn btn-example" id="exampleBtn">Load Example</button>
+      <button class="btn btn-reset" id="resetBtn">Reset</button>
+    </div>
+
+    <!-- Result Display Area -->
+    <div class="result-area" id="resultArea">
+      <div class="result-winner" id="resultWinner"></div>
+      <div class="result-reason" id="resultReason"></div>
+      <div class="result-flow" id="resultFlow"></div>
+      <div class="sanskrit-quote" id="resultQuote"></div>
+      <div class="quote-translation" id="resultQuoteTranslation"></div>
+      <div class="example-tag" id="exampleTag"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== REAL EXAMPLES ===================== -->
+<section id="examples">
+  <h2 class="section-heading">Real Examples from Indian Texts</h2>
+  <p class="section-intro">These illustrative cases show how the precedence doctrine has traditionally been applied to resolve conflicts across different domains of dharma — ritual, law, and daily conduct.</p>
+
+  <div class="examples-grid">
+    <article class="example-card">
+      <h3>1. Marriage Ritual Conflict</h3>
+      <span class="label">Scenario</span>
+      <p>The Vedic injunction emphasizes a single marriage (<em>ekavivāha</em>), but some Smriti texts permit remarriage under specific conditions, such as the death of a spouse or inability to bear children.</p>
+      <span class="label">Resolution</span>
+      <p>The Vedic (Śruti) rule prevails as the general norm, but Smriti provides contextual exceptions for special circumstances, since Smriti derives its authority from — and elaborates upon — Śruti rather than contradicting it.</p>
+      <div class="source">Source: Manusmriti 9.101; Rigveda 10.85</div>
+    </article>
+
+    <article class="example-card">
+      <h3>2. Inheritance Law Dispute</h3>
+      <span class="label">Scenario</span>
+      <p>The Arthashastra prescribes equal division of property among sons, while certain local customs favor a larger share for the eldest son.</p>
+      <span class="label">Resolution</span>
+      <p>In worldly and administrative matters (<em>Vyavahāra</em>), codified state law such as the Arthashastra generally prevails over uncodified local custom, though regional practice was often accommodated in practice.</p>
+      <div class="source">Source: Arthashastra 3.1; Yajnavalkya Smriti 2.136</div>
+    </article>
+
+    <article class="example-card">
+      <h3>3. Dietary Rules Variation</h3>
+      <span class="label">Scenario</span>
+      <p>Puranic literature broadly recommends vegetarianism as an ideal of non-violence (<em>ahimsa</em>), while certain Vedic ritual texts describe meat offerings within the context of yajna (sacrifice).</p>
+      <span class="label">Resolution</span>
+      <p>Vedic injunctions in this case are treated as context-specific — applying narrowly to ritual performance — while Puranic guidance governs general daily conduct, so the two are read as complementary rather than contradictory.</p>
+      <div class="source">Source: Shatapatha Brahmana; Bhagavata Purana 11.5.14</div>
+    </article>
+  </div>
+</section>
+
+<!-- ===================== REFERENCES ===================== -->
+<section id="references">
+  <h2 class="section-heading">References &amp; Sources</h2>
+
+  <div class="references-grid">
+    <div class="card ref-card">
+      <h3>Primary Sources</h3>
+      <ul>
+        <li>Manusmriti (Manu Smriti)</li>
+        <li>Yajnavalkya Smriti</li>
+        <li>Arthashastra by Chanakya (Kauṭilya)</li>
+        <li>Rigveda, Yajurveda</li>
+        <li>Bhagavata Purana</li>
+      </ul>
+    </div>
+
+    <div class="card ref-card">
+      <h3>Secondary Sources</h3>
+      <ul>
+        <li>Werner Menski, <em>Hindu Law: Beyond Tradition and Modernity</em> / "Dharmashastra: An Introduction"</li>
+        <li>A. K. Ramanujan, writings on Indian Knowledge Systems and classical literature</li>
+        <li>Robert Lingat, <em>The Classical Law of India</em> ("Hindu Law: Past and Present")</li>
+        <li>IKS Curriculum Framework, Ministry of Education, Government of India</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Educational Disclaimer:</strong> This website is created for educational purposes only as part of an IKS (Indian Knowledge Systems) subject project. All content is based on traditional Indian texts and academic secondary sources, simplified for classroom presentation. It is not intended as a scholarly authority on Dharmashastra jurisprudence.
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  <p class="footer-title">Śāstra Rule Precedence &amp; State Transition Simulator</p>
+  <p class="copyright">© 2026 | Educational Use Only</p>
+</footer>
+
+<!-- ===================== JAVASCRIPT ===================== -->
+<script>
+  // ---------- Precedence values ----------
+  const precedenceValues = {
+    "Śruti": 4,
+    "Smriti": 3,
+    "Purana": 2,
+    "Dharmasutra": 1
+  };
+
+  // Reasons for each Śāstra winning, keyed by winner name
+  const winReasons = {
+    "Śruti": "Śruti (Vedas) holds the highest authority in Indian Knowledge Systems as it is considered divine revelation (Apaurusheya) — not authored by any human being.",
+    "Smriti": "Smriti texts derive their authority directly from Śruti and are considered the human articulation of Vedic principles, giving them higher authority than Puranas and Dharmasutras.",
+    "Purana": "Puranic texts, while authoritative for popular religious practice and mythology, rank below Śruti and Smriti in matters of formal dharmic law.",
+    "Dharmasutra": "Dharmasutras are foundational legal aphorisms, but in the classical hierarchy they hold contextual authority, subordinate to Śruti, Smriti, and Purana."
+  };
+
+  const sanskritQuotes = {
+    "Śruti": { text: "श्रुतिः प्रमाणम्", translation: "\"Śruti is the supreme authority.\"" },
+    "Smriti": { text: "स्मृतिः श्रुत्यनुसारिणी", translation: "\"Smriti follows in accordance with Śruti.\"" },
+    "Purana": { text: "पुराणं धर्मबोधकम्", translation: "\"The Purana illuminates dharma through narrative.\"" },
+    "Dharmasutra": { text: "धर्मसूत्रं व्यवहारमूलम्", translation: "\"The Dharmasutra is the root of worldly conduct.\"" }
+  };
+
+  // Pre-loaded examples cycled by "Load Example" button
+  const examples = [
+    { a: "Smriti", b: "Purana", label: "Example 1: Manusmriti vs Bhagavata Purana → Smriti wins" },
+    { a: "Śruti", b: "Dharmasutra", label: "Example 2: Yajurveda vs Gautama Dharmasutra → Śruti wins" },
+    { a: "Purana", b: "Smriti", label: "Example 3: Vishnu Purana vs Narada Smriti → Smriti wins" }
+  ];
+  let exampleIndex = 0;
+
+  // ---------- DOM references ----------
+  const select1 = document.getElementById('shastra1');
+  const select2 = document.getElementById('shastra2');
+  const checkBtn = document.getElementById('checkBtn');
+  const exampleBtn = document.getElementById('exampleBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const resultArea = document.getElementById('resultArea');
+  const resultWinner = document.getElementById('resultWinner');
+  const resultReason = document.getElementById('resultReason');
+  const resultFlow = document.getElementById('resultFlow');
+  const resultQuote = document.getElementById('resultQuote');
+  const resultQuoteTranslation = document.getElementById('resultQuoteTranslation');
+  const exampleTag = document.getElementById('exampleTag');
+
+  // ---------- Core precedence logic ----------
+  function checkPrecedence(showExampleLabel) {
+    const shastraA = select1.value;
+    const shastraB = select2.value;
+
+    const valueA = precedenceValues[shastraA];
+    const valueB = precedenceValues[shastraB];
+
+    // Reset animation by removing and re-adding the class
+    resultArea.classList.remove('show');
+    void resultArea.offsetWidth; // force reflow to restart animation
+
+    if (valueA === valueB) {
+      // Edge case: identical Śāstra types selected
+      resultWinner.textContent = "Both Śāstras have equal authority";
+      resultReason.textContent = `${shastraA} and ${shastraB} belong to the same category and therefore hold equal precedence in this comparison. No single rule automatically overrides the other; contextual interpretation (desha-kala-paatra) would be required.`;
+      resultFlow.innerHTML = `
+        <span class="node">${shastraA}</span>
+        <span class="arrow">=</span>
+        <span class="node">${shastraB}</span>
+      `;
+      const q = sanskritQuotes[shastraA];
+      resultQuote.textContent = q.text;
+      resultQuoteTranslation.textContent = q.translation;
+    } else {
+      const winner = valueA > valueB ? shastraA : shastraB;
+      const loser = valueA > valueB ? shastraB : shastraA;
+
+      resultWinner.textContent = `${winner} has higher precedence`;
+      resultReason.textContent = winReasons[winner];
+      resultFlow.innerHTML = `
+        <span class="node">${winner}</span>
+        <span class="arrow">→</span>
+        <span class="node loser">${loser}</span>
+      `;
+      const q = sanskritQuotes[winner];
+      resultQuote.textContent = q.text;
+      resultQuoteTranslation.textContent = q.translation;
+    }
+
+    if (showExampleLabel) {
+      exampleTag.textContent = showExampleLabel;
+    } else {
+      exampleTag.textContent = "";
+    }
+
+    // Trigger the fade-slide-in animation
+    requestAnimationFrame(() => {
+      resultArea.classList.add('show');
+    });
+  }
+
+  // ---------- Event listeners ----------
+  checkBtn.addEventListener('click', () => checkPrecedence(null));
+
+  exampleBtn.addEventListener('click', () => {
+    const ex = examples[exampleIndex];
+    select1.value = ex.a;
+    select2.value = ex.b;
+    checkPrecedence(ex.label);
+    exampleIndex = (exampleIndex + 1) % examples.length;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    select1.selectedIndex = 0;
+    select2.selectedIndex = 0;
+    resultArea.classList.remove('show');
+    resultWinner.textContent = "";
+    resultReason.textContent = "";
+    resultFlow.innerHTML = "";
+    resultQuote.textContent = "";
+    resultQuoteTranslation.textContent = "";
+    exampleTag.textContent = "";
+    exampleIndex = 0;
+  });
+
+  // ---------- Tooltip accessibility (click-to-toggle for touch devices) ----------
+  document.querySelectorAll('.info-icon').forEach(icon => {
+    icon.addEventListener('click', function(e){
+      e.stopPropagation();
+      const tip = this.nextElementSibling;
+      const isVisible = tip.style.visibility === 'visible';
+      document.querySelectorAll('.tooltip-text').forEach(t => {
+        t.style.visibility = 'hidden';
+        t.style.opacity = '0';
+      });
+      if(!isVisible){
+        tip.style.visibility = 'visible';
+        tip.style.opacity = '1';
+      }
+    });
+  });
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.tooltip-text').forEach(t => {
+      t.style.visibility = 'hidden';
+      t.style.opacity = '0';
+    });
+  });
+</script>
+
+</body>
+</html>
